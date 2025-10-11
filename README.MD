@@ -1,5 +1,5 @@
-# Snake Game Rialo
-### game snake traditioanl optional for relaxations Rialo
+# Silowek Dashboard
+### Builder Community Project
 
 [![N|Solid](https://cldup.com/dTxpPi9lDf.thumb.png)](https://nodesource.com/products/nsolid)
 
