@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Rialo Snake Game</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+    body {
+      margin: 0;
+      background: #111;
+      color: #fff;
+      font-family: 'Press Start 2P', cursive;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 10px;
+    }
+
+    header img {
+      height: 40px;
+    }
+
+    h1 {
+      font-size: 16px;
+    }
+
+    .container {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .instructions {
+      width: 200px;
+      font-size: 10px;
+      line-height: 1.6;
+      color: #ccc;
+    }
+
+    #gameArea {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    canvas {
+      background: #222;
+      border: 3px solid #0f0;
+      display: block;
+    }
+
+    #score {
+      margin: 10px;
+      font-size: 12px;
+    }
+
+    .controls {
+      margin: 10px;
+    }
+
+    button {
+      background: #0f0;
+      border: none;
+      padding: 8px 12px;
+      margin: 5px;
+      font-family: 'Press Start 2P', cursive;
+      font-size: 10px;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+
+    .touch-controls {
+      display: none;
+      grid-template-columns: 60px 60px 60px;
+      grid-template-rows: 60px 60px;
+      gap: 5px;
+      margin-top: 10px;
+      justify-content: center;
+    }
+
+    .touch-btn {
+      background: #0a0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    @media (max-width: 768px) {
+      .instructions {
+        display: none;
+      }
+      .touch-controls {
+        display: grid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="wordm_logo_black.webp" alt="Rialo Logo">
+    <h1>Snake Game || Alexi</h1>
+  </header>
+
+  <div class="container">
+    <div class="instructions">
+      <h3>Instructions</h3>
+      <p>- Use Arrow keys or WASD to move</p>
+      <p>- Eat points to grow & score</p>
+      <p>- Don’t hit yourself</p>
+      <p>- Portals let you wrap around</p>
+    </div>
+
+    <div id="gameArea">
+      <div id="score">Score: 0</div>
+      <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+      <div class="controls">
+        <button id="startBtn">Start</button>
+        <button id="pauseBtn" style="display:none;">Pause</button>
+        <button id="resumeBtn" style="display:none;">Resume</button>
+      </div>
+
+      <div class="touch-controls">
+        <div></div>
+        <div class="touch-btn" data-dir="UP">⬆</div>
+        <div></div>
+        <div class="touch-btn" data-dir="LEFT">⬅</div>
+        <div class="touch-btn" data-dir="DOWN">⬇</div>
+        <div class="touch-btn" data-dir="RIGHT">➡</div>
+      </div>
+    </div>
+
+    <div class="instructions">
+      <h3>Tips</h3>
+      <p>- Plan moves ahead</p>
+      <p>- Use portals to escape</p>
+      <p>- Stay calm when long</p>
+      <p>- Aim for high score!</p>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const box = 20;
+    let snake = [{x: 9*box, y: 10*box}];
+    let direction = null;
+    let foodImg = new Image();
+    foodImg.src = "5509e735-4e27-4b7e-9b80-cf0506b127e3.png"; // point image
+
+    let food = {
+      x: Math.floor(Math.random() * (canvas.width/box)) * box,
+      y: Math.floor(Math.random() * (canvas.height/box)) * box
+    };
+
+    let score = 0;
+    let game;
+    let running = false;
+
+    document.addEventListener("keydown", dir);
+
+    function dir(event) {
+      if ((event.key === "ArrowLeft" || event.key === "a") && direction !== "RIGHT") direction = "LEFT";
+      else if ((event.key === "ArrowUp" || event.key === "w") && direction !== "DOWN") direction = "UP";
+      else if ((event.key === "ArrowRight" || event.key === "d") && direction !== "LEFT") direction = "RIGHT";
+      else if ((event.key === "ArrowDown" || event.key === "s") && direction !== "UP") direction = "DOWN";
+    }
+
+    // Touch controls
+    document.querySelectorAll(".touch-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        let dirKey = btn.getAttribute("data-dir");
+        if (dirKey === "LEFT" && direction !== "RIGHT") direction = "LEFT";
+        if (dirKey === "UP" && direction !== "DOWN") direction = "UP";
+        if (dirKey === "RIGHT" && direction !== "LEFT") direction = "RIGHT";
+        if (dirKey === "DOWN" && direction !== "UP") direction = "DOWN";
+      });
+    });
+
+    function collision(head, array) {
+      for (let i = 0; i < array.length; i++) {
+        if (head.x === array[i].x && head.y === array[i].y) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function draw() {
+      ctx.fillStyle = "#222";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw snake
+      for (let i = 0; i < snake.length; i++) {
+        ctx.fillStyle = i === 0 ? "#0f0" : "#0a0";
+        ctx.fillRect(snake[i].x, snake[i].y, box, box);
+      }
+
+      // Draw food
+      ctx.drawImage(foodImg, food.x + 2, food.y + 2, box - 4, box - 4);
+
+      if (!direction) return; // Wait for first move
+
+      let snakeX = snake[0].x;
+      let snakeY = snake[0].y;
+
+      if (direction === "LEFT") snakeX -= box;
+      if (direction === "UP") snakeY -= box;
+      if (direction === "RIGHT") snakeX += box;
+      if (direction === "DOWN") snakeY += box;
+
+      // Wrap portals
+      if (snakeX >= canvas.width) snakeX = 0;
+      if (snakeY >= canvas.height) snakeY = 0;
+      if (snakeX < 0) snakeX = canvas.width - box;
+      if (snakeY < 0) snakeY = canvas.height - box;
+
+      let newHead = {x: snakeX, y: snakeY};
+
+      // Eat food
+      if (snakeX === food.x && snakeY === food.y) {
+        score++;
+        document.getElementById("score").innerText = "Score: " + score;
+        food = {
+          x: Math.floor(Math.random() * (canvas.width/box)) * box,
+          y: Math.floor(Math.random() * (canvas.height/box)) * box
+        };
+      } else {
+        snake.pop();
+      }
+
+      // Self-collision
+      if (collision(newHead, snake)) {
+        clearInterval(game);
+        alert("Game Over! Final Score: " + score);
+        running = false;
+        document.getElementById("startBtn").style.display = "inline-block";
+        document.getElementById("pauseBtn").style.display = "none";
+        document.getElementById("resumeBtn").style.display = "none";
+      }
+
+      snake.unshift(newHead);
+    }
+
+    // Buttons
+    document.getElementById("startBtn").addEventListener("click", () => {
+      resetGame();
+      running = true;
+      game = setInterval(draw, 120);
+      document.getElementById("startBtn").style.display = "none";
+      document.getElementById("pauseBtn").style.display = "inline-block";
+    });
+
+    document.getElementById("pauseBtn").addEventListener("click", () => {
+      clearInterval(game);
+      running = false;
+      document.getElementById("pauseBtn").style.display = "none";
+      document.getElementById("resumeBtn").style.display = "inline-block";
+    });
+
+    document.getElementById("resumeBtn").addEventListener("click", () => {
+      if (!running) {
+        game = setInterval(draw, 120);
+        running = true;
+      }
+      document.getElementById("resumeBtn").style.display = "none";
+      document.getElementById("pauseBtn").style.display = "inline-block";
+    });
+
+    function resetGame() {
+      snake = [{x: 9*box, y: 10*box}];
+      direction = null;
+      score = 0;
+      document.getElementById("score").innerText = "Score: " + score;
+      food = {
+        x: Math.floor(Math.random() * (canvas.width/box)) * box,
+        y: Math.floor(Math.random() * (canvas.height/box)) * box
+      };
+    }
+  </script>
+</body>
+</html>
