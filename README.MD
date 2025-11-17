@@ -7,7 +7,7 @@
 
 [![Open In Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Naereen/badges)
 
-# 🎮 Snake Game Rialo - Feature Overview
+# 🎮 Snake Game 
 
 This is a simple yet addictive implementation of the classic Snake game. Below are the main features included in the application:
 
